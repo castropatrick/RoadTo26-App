@@ -12,7 +12,13 @@ import {
 } from 'react-native';
 
 import StickerCell from '../../components/StickerCell';
-import { getTeamStickers } from '../../db/queries';
+import {
+  addStickerDuplicate,
+  getTeamStickers,
+  markStickerCollected,
+  removeStickerDuplicate,
+  unmarkSticker,
+} from '../../db/queries';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function TeamAlbumScreen() {
@@ -21,38 +27,45 @@ export default function TeamAlbumScreen() {
   const { colors, spacing, radius, typography, shadows } = useTheme();
   const [stickers, setStickers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [actionStickerId, setActionStickerId] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadStickers() {
+  async function loadStickers({ showLoading = true } = {}) {
+    if (showLoading) {
       setIsLoading(true);
-      setError(null);
+    }
+    setError(null);
 
-      try {
-        const rows = await getTeamStickers(String(teamCode ?? '').toUpperCase());
+    try {
+      const rows = await getTeamStickers(String(teamCode ?? '').toUpperCase());
 
-        if (isMounted) {
-          setStickers(rows);
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setError(loadError);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      setStickers(rows);
+    } catch (loadError) {
+      setError(loadError);
+    } finally {
+      if (showLoading) {
+        setIsLoading(false);
       }
     }
+  }
 
+  useEffect(() => {
     loadStickers();
-
-    return () => {
-      isMounted = false;
-    };
   }, [teamCode]);
+
+  async function runStickerAction(stickerId, action) {
+    setActionStickerId(stickerId);
+    setError(null);
+
+    try {
+      await action(stickerId);
+      await loadStickers({ showLoading: false });
+    } catch (actionError) {
+      setError(actionError);
+    } finally {
+      setActionStickerId(null);
+    }
+  }
 
   const summary = useMemo(() => {
     const total = stickers.length;
@@ -98,7 +111,7 @@ export default function TeamAlbumScreen() {
             Selecao nao encontrada
           </Text>
           <Text style={[styles.stateText, { color: colors.textMuted }]}>
-            Verifique o codigo da selecao ou volte para o album.
+            {error?.message ?? 'Verifique o codigo da selecao ou volte para o album.'}
           </Text>
         </StateBlock>
       );
@@ -107,7 +120,17 @@ export default function TeamAlbumScreen() {
     return (
       <View style={[styles.grid, { gap: spacing.md }]}>
         {stickers.map((sticker) => (
-          <StickerCell key={sticker.id} sticker={sticker} />
+          <StickerCell
+            key={sticker.id}
+            isActionLoading={actionStickerId === sticker.id}
+            onAddDuplicate={(stickerId) => runStickerAction(stickerId, addStickerDuplicate)}
+            onMarkCollected={(stickerId) => runStickerAction(stickerId, markStickerCollected)}
+            onRemoveDuplicate={(stickerId) =>
+              runStickerAction(stickerId, removeStickerDuplicate)
+            }
+            onUnmark={(stickerId) => runStickerAction(stickerId, unmarkSticker)}
+            sticker={sticker}
+          />
         ))}
       </View>
     );

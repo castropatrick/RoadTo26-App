@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../hooks/useTheme';
 
@@ -31,7 +31,14 @@ function getStatusLabel(sticker) {
   return 'Faltando';
 }
 
-export default function StickerCell({ sticker }) {
+export default function StickerCell({
+  sticker,
+  isActionLoading = false,
+  onAddDuplicate,
+  onMarkCollected,
+  onRemoveDuplicate,
+  onUnmark,
+}) {
   const { colors, radius, spacing } = useTheme();
   const isFoil = sticker.is_special_foil === 1 || sticker.sticker_type === 'SPECIAL_FOIL';
   const isCollected = sticker.status === 'collected' || sticker.status === 'duplicate';
@@ -81,14 +88,67 @@ export default function StickerCell({ sticker }) {
         />
       </View>
       <Text style={[styles.status, { color: statusColor }]}>{getStatusLabel(sticker)}</Text>
+
+      <View style={styles.actions}>
+        {!isCollected ? (
+          <ActionButton
+            disabled={isActionLoading}
+            label="Coletei"
+            onPress={() => onMarkCollected?.(sticker.id)}
+            tone={colors.green}
+          />
+        ) : (
+          <ActionButton
+            disabled={isActionLoading}
+            label="Remover"
+            onPress={() => onUnmark?.(sticker.id)}
+            tone={colors.red}
+          />
+        )}
+        <ActionButton
+          disabled={isActionLoading}
+          label="Repetida +1"
+          onPress={() => onAddDuplicate?.(sticker.id)}
+          tone={colors.gold}
+        />
+        {isDuplicate ? (
+          <ActionButton
+            disabled={isActionLoading}
+            label="-1 repetida"
+            onPress={() => onRemoveDuplicate?.(sticker.id)}
+            tone={colors.blue}
+          />
+        ) : null}
+      </View>
     </View>
+  );
+}
+
+function ActionButton({ disabled, label, onPress, tone }) {
+  const { colors, radius } = useTheme();
+
+  return (
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.actionButton,
+        {
+          borderColor: tone,
+          borderRadius: radius.sm,
+          opacity: disabled ? 0.5 : 1,
+        },
+      ]}
+    >
+      <Text style={[styles.actionText, { color: tone || colors.text }]}>{label}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   cell: {
     borderWidth: 1,
-    minHeight: 184,
+    minHeight: 246,
     width: '47.8%',
   },
   preview: {
@@ -134,6 +194,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     marginTop: 6,
+    textTransform: 'uppercase',
+  },
+  actions: {
+    gap: 6,
+    marginTop: 10,
+  },
+  actionButton: {
+    alignItems: 'center',
+    borderWidth: 1,
+    minHeight: 30,
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  actionText: {
+    fontSize: 10,
+    fontWeight: '900',
     textTransform: 'uppercase',
   },
 });
