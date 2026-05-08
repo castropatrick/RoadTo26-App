@@ -165,6 +165,172 @@ export async function getCollectionStats() {
   };
 }
 
+export async function searchStickers(query) {
+  const db = await getDb();
+  let currentUserId = null;
+  const normalizedQuery = query?.trim() ?? '';
+  const likeQuery = `%${normalizedQuery}%`;
+
+  try {
+    currentUserId = await getCurrentUserId();
+  } catch {
+    currentUserId = null;
+  }
+
+  if (!normalizedQuery) {
+    return db.getAllAsync(
+      `
+        SELECT
+          stickers.id,
+          stickers.team_code,
+          stickers.team_name,
+          stickers.group_code,
+          stickers.number,
+          stickers.slot,
+          stickers.name,
+          stickers.sticker_type,
+          stickers.rarity,
+          stickers.is_special_foil,
+          stickers.sort_order,
+          COALESCE(sticker_status.status, 'missing') AS status,
+          COALESCE(sticker_status.duplicate_count, 0) AS duplicate_count,
+          sticker_status.collected_at
+        FROM stickers
+        LEFT JOIN sticker_status
+          ON sticker_status.sticker_id = stickers.id
+          AND sticker_status.user_id = ?
+        ORDER BY stickers.sort_order ASC, stickers.id ASC
+        LIMIT 24
+      `,
+      currentUserId
+    );
+  }
+
+  return db.getAllAsync(
+    `
+      SELECT
+        stickers.id,
+        stickers.team_code,
+        stickers.team_name,
+        stickers.group_code,
+        stickers.number,
+        stickers.slot,
+        stickers.name,
+        stickers.sticker_type,
+        stickers.rarity,
+        stickers.is_special_foil,
+        stickers.sort_order,
+        COALESCE(sticker_status.status, 'missing') AS status,
+        COALESCE(sticker_status.duplicate_count, 0) AS duplicate_count,
+        sticker_status.collected_at
+      FROM stickers
+      LEFT JOIN sticker_status
+        ON sticker_status.sticker_id = stickers.id
+        AND sticker_status.user_id = ?
+      WHERE stickers.id LIKE ?
+        OR stickers.name LIKE ?
+        OR stickers.team_name LIKE ?
+        OR stickers.team_code LIKE ?
+        OR stickers.number LIKE ?
+      ORDER BY
+        CASE
+          WHEN stickers.id = ? THEN 0
+          WHEN stickers.id LIKE ? THEN 1
+          WHEN stickers.team_code = ? THEN 2
+          ELSE 3
+        END,
+        stickers.sort_order ASC,
+        stickers.id ASC
+      LIMIT 40
+    `,
+    currentUserId,
+    likeQuery,
+    likeQuery,
+    likeQuery,
+    likeQuery,
+    likeQuery,
+    normalizedQuery.toUpperCase(),
+    `${normalizedQuery.toUpperCase()}%`,
+    normalizedQuery.toUpperCase()
+  );
+}
+
+export async function getStickerCollectionState(stickerId) {
+  const db = await getDb();
+  const userId = await getCurrentUserId();
+
+  const sticker = await db.getFirstAsync(
+    `
+      SELECT
+        stickers.id,
+        stickers.team_code,
+        stickers.team_name,
+        stickers.group_code,
+        stickers.number,
+        stickers.slot,
+        stickers.name,
+        stickers.sticker_type,
+        stickers.rarity,
+        stickers.is_special_foil,
+        stickers.sort_order,
+        COALESCE(sticker_status.status, 'missing') AS status,
+        COALESCE(sticker_status.duplicate_count, 0) AS duplicate_count,
+        sticker_status.collected_at,
+        sticker_status.updated_at AS status_updated_at
+      FROM stickers
+      LEFT JOIN sticker_status
+        ON sticker_status.sticker_id = stickers.id
+        AND sticker_status.user_id = ?
+      WHERE stickers.id = ?
+    `,
+    userId,
+    stickerId
+  );
+
+  if (!sticker) {
+    throw new Error('Figurinha nao encontrada no album local.');
+  }
+
+  return sticker;
+}
+
+export async function createScanHistory(entry) {
+  const db = await getDb();
+  const userId = await getCurrentUserId();
+  const id = entry?.id ?? `scan-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+  await db.runAsync(
+    `
+      INSERT INTO scan_history (
+        id,
+        user_id,
+        image_uri,
+        raw_text,
+        detected_sticker_id,
+        confidence,
+        scan_mode,
+        result_status,
+        candidates_json,
+        created_at,
+        updated_at,
+        is_synced
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+    `,
+    id,
+    userId,
+    entry?.imageUri ?? entry?.image_uri ?? null,
+    entry?.rawText ?? entry?.raw_text ?? null,
+    entry?.detectedStickerId ?? entry?.detected_sticker_id ?? null,
+    entry?.confidence ?? null,
+    entry?.scanMode ?? entry?.scan_mode ?? 'camera',
+    entry?.resultStatus ?? entry?.result_status ?? 'confirmed',
+    entry?.candidatesJson ?? entry?.candidates_json ?? null
+  );
+
+  return id;
+}
+
 async function getStickerStatus(db, userId, stickerId) {
   return db.getFirstAsync(
     `
