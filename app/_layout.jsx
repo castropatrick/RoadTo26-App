@@ -23,14 +23,25 @@ function RootStack() {
     let isMounted = true;
 
     async function prepareDatabase() {
+      let bootStep = 'initializeSchema';
+
       try {
+        bootStep = 'initializeSchema';
         await initializeSchema();
+
+        bootStep = 'seedStickersIfNeeded';
         await seedStickersIfNeeded();
 
         if (isMounted) {
           setIsDbReady(true);
         }
       } catch (error) {
+        console.error('[RoadTo26 boot] Database initialization failed', {
+          step: bootStep,
+          message: error?.message,
+          stack: error?.stack,
+        });
+
         if (isMounted) {
           setDbError(error);
         }

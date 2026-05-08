@@ -248,20 +248,21 @@ function mapSeedStickerToRow(sticker) {
   const stickerType = sticker.type ?? sticker.sticker_type ?? 'COMMON';
   const isSpecialFoil =
     sticker.isSpecialFoil ?? sticker.is_special_foil ?? stickerType === 'SPECIAL_FOIL';
+  const slot = sticker.slot ?? null;
 
-  return {
-    id: sticker.id,
-    team_code: sticker.teamCode ?? sticker.team_code ?? null,
-    team_name: sticker.teamName ?? sticker.team_name ?? null,
-    group_code: sticker.group ?? sticker.group_code ?? null,
-    number: sticker.number,
-    slot: sticker.slot ?? null,
-    name: sticker.playerName ?? sticker.name,
-    sticker_type: stickerType,
-    rarity: sticker.rarity ?? stickerType,
-    is_special_foil: isSpecialFoil ? 1 : 0,
-    sort_order: sticker.sortOrder ?? sticker.sort_order ?? Number(sticker.slot ?? 0),
-  };
+  return [
+    sticker.id,
+    sticker.teamCode ?? sticker.team_code ?? null,
+    sticker.teamName ?? sticker.team_name ?? null,
+    sticker.group ?? sticker.group_code ?? null,
+    sticker.number ?? '',
+    slot,
+    sticker.playerName ?? sticker.name ?? sticker.title ?? sticker.id,
+    stickerType,
+    sticker.rarity ?? stickerType,
+    isSpecialFoil ? 1 : 0,
+    sticker.sortOrder ?? sticker.sort_order ?? Number(slot ?? 0),
+  ];
 }
 
 export async function seedStickersIfNeeded() {
@@ -292,17 +293,17 @@ export async function seedStickersIfNeeded() {
         sort_order
       )
       VALUES (
-        $id,
-        $team_code,
-        $team_name,
-        $group_code,
-        $number,
-        $slot,
-        $name,
-        $sticker_type,
-        $rarity,
-        $is_special_foil,
-        $sort_order
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
       )
     `);
 
