@@ -1,5 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
+import { STICKERS } from './stickers-seed';
+
 const DATABASE_NAME = 'roadto26.db';
 
 let dbInstance = null;
@@ -242,8 +244,87 @@ export async function initializeSchema() {
   return db;
 }
 
+function mapSeedStickerToRow(sticker) {
+  const stickerType = sticker.type ?? sticker.sticker_type ?? 'COMMON';
+  const isSpecialFoil =
+    sticker.isSpecialFoil ?? sticker.is_special_foil ?? stickerType === 'SPECIAL_FOIL';
+
+  return {
+    id: sticker.id,
+    team_code: sticker.teamCode ?? sticker.team_code ?? null,
+    team_name: sticker.teamName ?? sticker.team_name ?? null,
+    group_code: sticker.group ?? sticker.group_code ?? null,
+    number: sticker.number,
+    slot: sticker.slot ?? null,
+    name: sticker.playerName ?? sticker.name,
+    sticker_type: stickerType,
+    rarity: sticker.rarity ?? stickerType,
+    is_special_foil: isSpecialFoil ? 1 : 0,
+    sort_order: sticker.sortOrder ?? sticker.sort_order ?? Number(sticker.slot ?? 0),
+  };
+}
+
+export async function seedStickersIfNeeded() {
+  const db = await getDb();
+  const existing = await db.getFirstAsync('SELECT COUNT(*) AS count FROM stickers');
+
+  if ((existing?.count ?? 0) > 0) {
+    return {
+      inserted: 0,
+      skipped: true,
+      total: existing.count,
+    };
+  }
+
+  await db.withTransactionAsync(async () => {
+    const statement = await db.prepareAsync(`
+      INSERT INTO stickers (
+        id,
+        team_code,
+        team_name,
+        group_code,
+        number,
+        slot,
+        name,
+        sticker_type,
+        rarity,
+        is_special_foil,
+        sort_order
+      )
+      VALUES (
+        $id,
+        $team_code,
+        $team_name,
+        $group_code,
+        $number,
+        $slot,
+        $name,
+        $sticker_type,
+        $rarity,
+        $is_special_foil,
+        $sort_order
+      )
+    `);
+
+    try {
+      for (const sticker of STICKERS) {
+        await statement.executeAsync(mapSeedStickerToRow(sticker));
+      }
+    } finally {
+      await statement.finalizeAsync();
+    }
+  });
+
+  return {
+    inserted: STICKERS.length,
+    skipped: false,
+    total: STICKERS.length,
+  };
+}
+
 export default {
   openDatabase,
   getDb,
   initializeSchema,
+  seedStickersIfNeeded,
 };
