@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Album, Camera, LogOut, Medal, Repeat2 } from 'lucide-react-native';
+import { Album, BarChart3, Camera, LogOut, Medal } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -20,10 +20,10 @@ const shortcuts = [
     route: '/scan',
   },
   {
-    label: 'Matches',
-    description: 'Possiveis trocas fisicas',
-    icon: Repeat2,
-    route: '/trades',
+    label: 'Stats',
+    description: 'Ver estatisticas',
+    icon: BarChart3,
+    route: '/stats',
   },
   {
     label: 'Ranking',

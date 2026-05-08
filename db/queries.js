@@ -92,6 +92,79 @@ export async function getTeamStickers(teamCode) {
   );
 }
 
+export async function getCollectionStats() {
+  const db = await getDb();
+  const userId = await getCurrentUserId();
+  const totals = await db.getFirstAsync(
+    `
+      SELECT
+        COUNT(stickers.id) AS total_stickers,
+        COALESCE(
+          SUM(
+            CASE
+              WHEN sticker_status.status IN ('collected', 'duplicate') THEN 1
+              ELSE 0
+            END
+          ),
+          0
+        ) AS collected_count,
+        COALESCE(SUM(sticker_status.duplicate_count), 0) AS duplicate_count,
+        COALESCE(
+          SUM(
+            CASE
+              WHEN stickers.is_special_foil = 1
+                AND sticker_status.status IN ('collected', 'duplicate') THEN 1
+              ELSE 0
+            END
+          ),
+          0
+        ) AS special_foil_collected
+      FROM stickers
+      LEFT JOIN sticker_status
+        ON sticker_status.sticker_id = stickers.id
+        AND sticker_status.user_id = ?
+    `,
+    userId
+  );
+  const teams = await getTeamSummaries();
+  const teamProgress = teams.map((team) => {
+    const total = Number(team.total_stickers ?? 0);
+    const collected = Number(team.collected_count ?? 0);
+
+    return {
+      teamCode: team.team_code,
+      teamName: team.team_name,
+      groupCode: team.group_code,
+      total,
+      collected,
+      missing: Math.max(total - collected, 0),
+      percent: total > 0 ? Math.round((collected / total) * 100) : 0,
+    };
+  });
+  const totalStickers = Number(totals?.total_stickers ?? 0);
+  const collectedCount = Number(totals?.collected_count ?? 0);
+  const duplicateCount = Number(totals?.duplicate_count ?? 0);
+  const specialFoilCollected = Number(totals?.special_foil_collected ?? 0);
+
+  return {
+    totalStickers,
+    collectedCount,
+    missingCount: Math.max(totalStickers - collectedCount, 0),
+    duplicateCount,
+    overallPercent:
+      totalStickers > 0 ? Math.round((collectedCount / totalStickers) * 100) : 0,
+    specialFoilCollected,
+    completedTeams: teamProgress.filter((team) => team.total > 0 && team.collected >= team.total)
+      .length,
+    topTeams: [...teamProgress]
+      .sort((a, b) => b.percent - a.percent || b.collected - a.collected)
+      .slice(0, 5),
+    lowTeams: [...teamProgress]
+      .sort((a, b) => a.percent - b.percent || a.collected - b.collected)
+      .slice(0, 5),
+  };
+}
+
 async function getStickerStatus(db, userId, stickerId) {
   return db.getFirstAsync(
     `
