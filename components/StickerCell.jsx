@@ -13,7 +13,7 @@ function getStickerKind(sticker) {
   }
 
   if (sticker.is_special_foil === 1 || sticker.sticker_type === 'SPECIAL_FOIL') {
-    return 'Foil';
+    return 'Brilhante';
   }
 
   return 'Jogador';

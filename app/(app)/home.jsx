@@ -239,7 +239,7 @@ export default function HomeScreen() {
               <MetricCard label="Coletadas" value={stats.collectedCount} tone={colors.green} />
               <MetricCard label="Faltantes" value={stats.missingCount} tone={colors.red} />
               <MetricCard label="Duplicatas" value={stats.duplicateCount} tone={colors.blue} />
-              <MetricCard label="Foils" value={stats.specialFoilCollected} tone={colors.gold} />
+              <MetricCard label="Brilhantes" value={stats.specialFoilCollected} tone={colors.gold} />
               <MetricCard label="Selecoes completas" value={stats.completedTeams} tone={colors.gold} wide />
             </View>
           </>

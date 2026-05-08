@@ -98,8 +98,8 @@ CC-1, ..., CC-14
 - Não inventar jogadores
 - Preservar acentos e nomes reais
 - `number` é sempre string, inclusive `"00"`
-- Escudos das seleções → **special foil**
-- FWC → **special foil**
+- Escudos das seleções → **special foil** (na UI: escudo brilhante)
+- FWC → **special foil** (na UI: brilhante)
 - Coca-Cola cards → stickers extras comuns (salvo decisão contrária)
 - Não alterar IDs sem necessidade
 
@@ -107,7 +107,7 @@ CC-1, ..., CC-14
 
 | Slot | Conteúdo |
 |---|---|
-| 1 | Escudo (special foil) |
+| 1 | Escudo brilhante (`special foil`) |
 | 2–12 | Jogadores 1–11 |
 | 13 | Foto da equipe |
 | 14–20 | Jogadores 12–18 |
@@ -115,6 +115,12 @@ CC-1, ..., CC-14
 ---
 
 ## Funcionalidades
+
+## Linguagem da Interface
+
+- A interface do app deve usar pt-BR.
+- Na UI, o termo para `special foil` deve ser **brilhante** ou **brilhantes**.
+- Campos técnicos e nomes internos podem continuar usando `is_special_foil` e termos equivalentes.
 
 ### Coleção
 
@@ -191,7 +197,7 @@ Eventos possíveis:
 
 ### Ranking
 
-Rankings planejados: global, entre amigos, por progresso, por quantidade, por seleções completas, por special foils.
+Rankings planejados: global, entre amigos, por progresso, por quantidade, por seleções completas, por figurinhas brilhantes.
 
 Visual: cards, medalhas, destaque para top 3, avatar e barra de progresso. Não usar tabela fria.
 
@@ -221,7 +227,7 @@ Não depender de lógica frágil (`sem texto = figurinha colada`). Sempre permit
 - Marcar automaticamente como **coletada** se for nova
 - Somar automaticamente como **duplicata** se já existir
 - Registrar histórico de scans
-- Indicar tipo: comum, escudo, foto da equipe, FWC, Coca-Cola ou special foil
+- Indicar tipo: comum, escudo, foto da equipe, FWC, Coca-Cola ou brilhante
 
 #### Comportamento esperado
 
@@ -241,7 +247,7 @@ Sempre que possível, gerar uma visualização modern estilo card 3×4:
 - Seleção e código do sticker
 - Tipo do sticker
 - Status: **nova**, **coletada** ou **repetida**
-- Efeito foil para special foil
+- Efeito brilhante para figurinhas brilhantes
 - Bordas, gradiente e sombra — visual premium
 
 O objetivo é transformar o scanner em uma **experiência visual**, não apenas funcional.
@@ -317,7 +323,7 @@ Paleta de cores:
 | Token | Cor | Uso |
 |---|---|---|
 | Background | Azul noite / quase preto | Base premium |
-| Gold | Dourado | Foil, conquistas, progresso |
+| Gold | Dourado | Brilhantes, conquistas, progresso |
 | Red | Vermelho | Energia, Canadá/México, alertas |
 | Green | Verde | Coletado, México, status positivo |
 | Blue | Azul | Social, ranking, EUA |

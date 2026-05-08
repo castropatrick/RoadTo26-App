@@ -254,7 +254,7 @@ export default function StatsScreen() {
               <StatCard label="Faltantes" tone={colors.red} value={stats.missingCount} />
               <StatCard label="Duplicatas" tone={colors.gold} value={stats.duplicateCount} />
               <StatCard
-                label="Special foils"
+                label="Brilhantes"
                 tone={colors.blue}
                 value={stats.specialFoilCollected}
               />

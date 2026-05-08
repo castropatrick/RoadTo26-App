@@ -13,7 +13,7 @@ const mockPodium = [
   },
   {
     name: 'Bruno',
-    label: 'Foils em alta',
+    label: 'Brilhantes em alta',
     percent: 64,
     tone: 'blue',
   },
@@ -49,7 +49,7 @@ export default function LeaderboardPlaceholderScreen() {
           </Text>
           <Text style={[styles.subtitle, typography.body, { color: colors.textMuted }]}>
             Ranking global e entre amigos vao destacar progresso, selecoes completas,
-            quantidade coletada e special foils.
+            quantidade coletada e figurinhas brilhantes.
           </Text>
         </View>
 
