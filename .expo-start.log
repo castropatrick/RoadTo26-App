@@ -3,3 +3,41 @@ Starting Metro Bundler
 warning: Bundler cache is empty, rebuilding (this may take a minute)
 Waiting on http://localhost:8082
 Logs for your project will appear below.
+Web .\index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web .\index.js ▓▓▓▓▓░░░░░░░░░░░ 34.9% (13/22)
+Web Bundling failed 4297ms index.js (63 modules)
+Unable to resolve "react-native-web/dist/exports/DeviceEventEmitter" from "node_modules\expo\src\async-require\hmr.ts"
+[0m[31m[1m>[22m[39m[90m 1 |[39m [90m/**[39m
+ [90m 2 |[39m [90m * Copyright (c) 650 Industries.[39m
+ [90m 3 |[39m [90m * Copyright (c) Meta Platforms, Inc. and affiliates.[39m
+ [90m 4 |[39m [90m *[39m[0m
+
+Import stack:
+
+ node_modules\expo\src\async-require\hmr.ts
+ | import "react-native-web/dist/exports/DeviceEventEmitter"
+
+ node_modules\expo\src\async-require\setupHMR.ts
+ | import "./hmr"
+
+ node_modules\expo\src\async-require\setup.ts
+ | import "./setupHMR"
+
+ node_modules\expo\src\winter\runtime.ts
+ | import "../async-require/setup"
+
+ node_modules\expo\src\winter\index.ts
+ | import "./runtime"
+
+ node_modules\expo\src\Expo.fx.web.tsx
+ | import "./winter"
+
+ node_modules\expo\src\Expo.ts
+ | import "./Expo.fx"
+
+ index.js
+ | import "expo"
+
+ 
+ | import "./index"
+

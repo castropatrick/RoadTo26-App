@@ -1,7 +1,7 @@
 {
   "name": "roadto26-app",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -12,7 +12,6 @@
     "@react-native-community/netinfo": "11.4.1",
     "@tanstack/react-query": "^5.100.9",
     "expo": "~54.0.33",
-    "expo-camera": "~17.0.10",
     "expo-haptics": "~15.0.8",
     "expo-linear-gradient": "~15.0.8",
     "expo-router": "~6.0.23",
