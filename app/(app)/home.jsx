@@ -1,8 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { Album, BarChart3, Camera, LogOut, Medal } from 'lucide-react-native';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Album, BarChart3, Camera, LogOut, Medal, Repeat2 } from 'lucide-react-native';
 
+import { getCollectionStats } from '../../db/queries';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 
@@ -26,6 +28,12 @@ const shortcuts = [
     route: '/stats',
   },
   {
+    label: 'Matches',
+    description: 'Encontrar trocas',
+    icon: Repeat2,
+    route: '/trades',
+  },
+  {
     label: 'Ranking',
     description: 'Comparar progresso',
     icon: Medal,
@@ -37,7 +45,49 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, logout, isMockMode } = useAuth();
   const { colors, spacing, radius, typography, shadows } = useTheme();
+  const [stats, setStats] = useState(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState(null);
   const displayName = user?.displayName || user?.username || 'colecionador';
+  const progressPercent = stats?.overallPercent ?? 0;
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+
+      async function loadStats() {
+        try {
+          setIsLoadingStats(true);
+          setStatsError(null);
+          const collectionStats = await getCollectionStats();
+
+          if (isMounted) {
+            setStats(collectionStats);
+          }
+        } catch (error) {
+          console.error('[Home] Falha ao carregar estatisticas da colecao', {
+            message: error?.message,
+            stack: error?.stack,
+          });
+
+          if (isMounted) {
+            setStatsError(error?.message || 'Nao foi possivel carregar sua colecao agora.');
+            setStats(null);
+          }
+        } finally {
+          if (isMounted) {
+            setIsLoadingStats(false);
+          }
+        }
+      }
+
+      loadStats();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   async function handleLogout() {
     await logout();
@@ -102,53 +152,98 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        <View
-          style={[
-            styles.progressCard,
-            shadows.card,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              borderRadius: radius.lg,
-              padding: spacing.lg,
-            },
-          ]}
-        >
-          <View style={styles.progressTop}>
-            <View>
-              <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-                Progresso total
-              </Text>
-              <Text style={[styles.progressValue, { color: colors.text }]}>0 / 994</Text>
-            </View>
-            <Text style={[styles.percent, { color: colors.gold }]}>0%</Text>
-          </View>
-
-          <View
-            style={[
-              styles.progressTrack,
-              {
-                backgroundColor: colors.backgroundElevated,
-                borderRadius: radius.pill,
-                marginTop: spacing.md,
-              },
-            ]}
-          >
+        {isLoadingStats ? (
+          <StateCard>
+            <ActivityIndicator color={colors.gold} />
+            <Text style={[styles.stateTitle, { color: colors.text }]}>
+              Carregando sua colecao
+            </Text>
+            <Text style={[styles.stateText, { color: colors.textMuted }]}>
+              Lendo o album local no SQLite.
+            </Text>
+          </StateCard>
+        ) : statsError ? (
+          <StateCard>
+            <Text style={[styles.stateTitle, { color: colors.text }]}>
+              Nao foi possivel carregar o progresso
+            </Text>
+            <Text style={[styles.stateText, { color: colors.textMuted }]}>
+              {statsError}
+            </Text>
+          </StateCard>
+        ) : !stats || stats.totalStickers === 0 ? (
+          <StateCard>
+            <Text style={[styles.stateTitle, { color: colors.text }]}>
+              Album ainda vazio
+            </Text>
+            <Text style={[styles.stateText, { color: colors.textMuted }]}>
+              Abra o app novamente apos a preparacao local terminar.
+            </Text>
+          </StateCard>
+        ) : (
+          <>
             <View
               style={[
-                styles.progressFill,
+                styles.progressCard,
+                shadows.card,
                 {
-                  backgroundColor: colors.gold,
-                  borderRadius: radius.pill,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderRadius: radius.lg,
+                  padding: spacing.lg,
                 },
               ]}
-            />
-          </View>
+            >
+              <View style={styles.progressTop}>
+                <View>
+                  <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
+                    Progresso total
+                  </Text>
+                  <Text style={[styles.progressValue, { color: colors.text }]}>
+                    {stats.collectedCount} / {stats.totalStickers}
+                  </Text>
+                </View>
+                <Text style={[styles.percent, { color: colors.gold }]}>
+                  {progressPercent}%
+                </Text>
+              </View>
 
-          <Text style={[styles.progressHint, { color: colors.textMuted, marginTop: spacing.md }]}>
-            Progresso real entra na proxima etapa, usando o SQLite local.
-          </Text>
-        </View>
+              <View
+                style={[
+                  styles.progressTrack,
+                  {
+                    backgroundColor: colors.backgroundElevated,
+                    borderRadius: radius.pill,
+                    marginTop: spacing.md,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      backgroundColor: colors.gold,
+                      borderRadius: radius.pill,
+                      width: `${Math.max(progressPercent, progressPercent > 0 ? 4 : 0)}%`,
+                    },
+                  ]}
+                />
+              </View>
+
+              <Text style={[styles.progressHint, { color: colors.textMuted, marginTop: spacing.md }]}>
+                {stats.completedTeams} selecoes completas no seu album local.
+              </Text>
+            </View>
+
+            <View style={[styles.metricsGrid, { gap: spacing.md }]}>
+              <MetricCard label="Coletadas" value={stats.collectedCount} tone={colors.green} />
+              <MetricCard label="Faltantes" value={stats.missingCount} tone={colors.red} />
+              <MetricCard label="Duplicatas" value={stats.duplicateCount} tone={colors.blue} />
+              <MetricCard label="Foils" value={stats.specialFoilCollected} tone={colors.gold} />
+              <MetricCard label="Selecoes completas" value={stats.completedTeams} tone={colors.gold} wide />
+            </View>
+          </>
+        )}
 
         <View style={[styles.shortcutsGrid, { gap: spacing.md }]}>
           {shortcuts.map((item) => {
@@ -191,6 +286,50 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </LinearGradient>
+  );
+}
+
+function StateCard({ children }) {
+  const { colors, spacing, radius, shadows } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.stateCard,
+        shadows.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: radius.lg,
+          gap: spacing.sm,
+          padding: spacing.lg,
+        },
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+function MetricCard({ label, value, tone, wide = false }) {
+  const { colors, spacing, radius } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.metricCard,
+        wide ? styles.metricCardWide : null,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: radius.lg,
+          padding: spacing.md,
+        },
+      ]}
+    >
+      <Text style={[styles.metricValue, { color: tone }]}>{value}</Text>
+      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{label}</Text>
+    </View>
   );
 }
 
@@ -273,6 +412,41 @@ const styles = StyleSheet.create({
     width: '2%',
   },
   progressHint: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  metricCard: {
+    borderWidth: 1,
+    minHeight: 94,
+    width: '47.8%',
+  },
+  metricCardWide: {
+    width: '100%',
+  },
+  metricValue: {
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  metricLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+    marginTop: 6,
+    textTransform: 'uppercase',
+  },
+  stateCard: {
+    alignItems: 'flex-start',
+    borderWidth: 1,
+  },
+  stateTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  stateText: {
     fontSize: 14,
     lineHeight: 20,
   },
